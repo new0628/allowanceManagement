@@ -53,7 +53,7 @@ fun ItemTitle() {
 }
 
 @Composable
-fun TranslateItemName (date : String, description : String, amount : Int, onLongPress : () -> Unit) {
+fun TranslateItemName (date : String, description : String, amount : Int, onClick : () -> Unit = {}, onLongPress : () -> Unit = {}) {
     val showDate = remember(date) { formatDateForUI(date) }
     Column(
         modifier = Modifier
@@ -61,6 +61,7 @@ fun TranslateItemName (date : String, description : String, amount : Int, onLong
             .pointerInput(Unit) {
                 detectTapGestures(
                     onTap = {
+                        onClick()
                         Log.d("Item클릭", "날짜 : $date 내용 : $description 금액 : $amount")
                     },
                     onLongPress = {

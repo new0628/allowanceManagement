@@ -19,8 +19,7 @@ import androidx.compose.ui.unit.dp
 
 // 서치바 기능
 @Composable
-fun SearchBar() {
-    var textFieldText by remember { mutableStateOf("") }
+fun SearchBar(query : String, onQueryChange : (String) -> Unit) {
 
     Row(
         modifier = Modifier
@@ -29,9 +28,9 @@ fun SearchBar() {
             .padding(top = 15.dp)
     ) {
         TextField(
-            value = textFieldText,
+            value = query,
             onValueChange = { newText ->
-                textFieldText = newText
+                onQueryChange(newText)
             },
             placeholder = {
                 Text("검색")
@@ -42,6 +41,7 @@ fun SearchBar() {
                     contentDescription = "search"
                 )
             },
+            singleLine = true,
             modifier = Modifier
                 .fillMaxWidth(),
             colors = TextFieldDefaults.colors()

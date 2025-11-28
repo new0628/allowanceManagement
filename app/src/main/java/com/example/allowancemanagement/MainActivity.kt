@@ -11,6 +11,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.example.allowancemanagement.ui.theme.AllowanceManagementTheme
 import com.example.allowancemanagement.viewModel.HomeViewModel
 import androidx.activity.viewModels
+import com.example.allowancemanagement.db.NativeDb
+import com.example.allowancemanagement.model.HomeRepository
 import com.example.allowancemanagement.view.MainView
 
 class MainActivity : ComponentActivity() {
@@ -19,19 +21,20 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val db = getDatabasePath("allowance.db")
+        NativeDb.open(db.absolutePath)
+        NativeDb.debugPrintAll()
+
+        homeVm.loadInitialData()
         setContent {
             AllowanceManagementTheme {
                 MainView(homeViewModel = homeVm)
             }
         }
     }
-}
 
-@Preview(showBackground = true)
-@Composable
-fun PreviewHome() {
-    AllowanceManagementTheme {
-        val homeVm = HomeViewModel()
-        MainView(homeViewModel = homeVm)
+    override fun onDestroy() {
+        super.onDestroy()
+        NativeDb.close()
     }
 }

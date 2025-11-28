@@ -10,7 +10,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -18,15 +17,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.lazy.items
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.text.style.TextAlign
+import com.example.allowancemanagement.model.ActivityUI
 
 // 수입 / 지출 리스트 UI
 
 @Composable
 fun ActivityList (
     items : List<ActivityUI>,
-    onDelete : (ActivityUI) -> Unit
+    onDelete : (ActivityUI) -> Unit,
+    onItemClick : (ActivityUI) ->Unit
 ) {
 
     // 다이얼로그 flag
@@ -65,6 +64,9 @@ fun ActivityList (
                 date = item.date,
                 description = item.description,
                 amount = item.amount,
+                onClick = {
+                    onItemClick(item)
+                },
                 onLongPress = {
                     selectedItem = item
                     showDeleteDialog = true
