@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <jni.h>
 #include <android//log.h>
 #include "sqlite3.h"
@@ -160,7 +161,7 @@ Java_com_example_allowancemanagement_db_NativeDb_getBalance(
     return balance;
 }
 
-// SELECT
+// ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ SELECT ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
 JNIEXPORT jobject JNICALL
 Java_com_example_allowancemanagement_db_NativeDb_loadByMonthAndQuery(
         JNIEnv *env,
@@ -270,7 +271,217 @@ Java_com_example_allowancemanagement_db_NativeDb_loadByMonthAndQuery(
     return listObj;
 }
 
-// INSERT
+// Select 날짜눌렀을때 결과 반환
+JNIEXPORT jobject JNICALL
+Java_com_example_allowancemanagement_db_NativeDb_loadByDateAndType (
+        JNIEnv *env,
+        jclass clazz,
+        jint jYear,
+        jint jMonth,
+        jint jDay,
+        jint jType
+        ) {
+    if (db == NULL) {
+        throwException(env, "DB가 열려있지 않음", -1);
+        return NULL;
+    }
+
+    int year = (int) jYear;
+    int month = (int) jMonth;
+    int day = (int) jDay;
+    int type = (int) jType;
+
+    char ymd[11]; // YYYY-MM-DD + \0
+    snprintf(ymd, sizeof(ymd), "%04d-%02d-%02d", year, month, day);
+
+    const char* sql =
+            "SELECT id, type, date, description, amount "
+            "FROM ACTIVITY_DB "
+            "WHERE date = ? "
+            "AND type = ? "
+            "ORDER BY id ASC;";
+
+    sqlite3_stmt* stmt = NULL;
+    int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        LOGE("SELECT 준비 실패 : %d", rc);
+        throwException(env, "SELECT 준비 실패", rc);
+        return NULL;
+    }
+
+    // 바인딩
+    sqlite3_bind_text(stmt, 1, ymd, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 2, type);
+
+    // ArrayList
+    jclass listClass = (*env) -> FindClass(env, "java/util/ArrayList");
+    jmethodID listCtor = (*env) -> GetMethodID(env, listClass, "<init>", "()V");
+    jmethodID listAdd = (*env) -> GetMethodID(env, listClass, "add", "(Ljava/lang/Object;)Z");
+    jobject listObj = (*env) -> NewObject(env, listClass, listCtor);
+
+    jclass  uiClass = (*env) -> FindClass(env, "com/example/allowancemanagement/model/ActivityUI");
+    if (uiClass == NULL) {
+        LOGE("ActivityUI 클래스를 찾을 수 없음");
+        sqlite3_finalize(stmt);
+        throwException(env, "ActivityUI 클래스 로드 실패", -1);
+        return NULL;
+    }
+
+    jmethodID uiCtor = (*env) -> GetMethodID(env, uiClass, "<init>", "(IILjava/lang/String;Ljava/lang/String;I)V");
+    if (uiCtor == NULL) {
+        LOGE("ActivityUI 생성자 찾을 수 없음");
+        sqlite3_finalize(stmt);
+        throwException(env, "ActivityUI 생성자 로드 실패", -1);
+        return NULL;
+    }
+
+    while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
+        int id = sqlite3_column_int(stmt, 0);
+        int cType = sqlite3_column_int(stmt, 1);
+        const unsigned char* cDate = sqlite3_column_text(stmt, 2);
+        const unsigned char* cDesc = sqlite3_column_text(stmt, 3);
+        int amount = sqlite3_column_int(stmt, 4);
+
+        jstring jDate = (*env) -> NewStringUTF(env, (const char*) cDate);
+        jstring jDesc = (*env) -> NewStringUTF(env, (const char*) cDesc);
+
+        jobject uiObj = (*env) -> NewObject (
+                env, uiClass, uiCtor, id, cType, jDate, jDesc, amount
+                );
+        (*env) -> CallBooleanMethod(env, listObj, listAdd, uiObj);
+
+        (*env) -> DeleteLocalRef(env, jDate);
+        (*env) -> DeleteLocalRef(env, jDesc);
+        (*env) -> DeleteLocalRef(env, uiObj);
+    }
+
+    if (rc != SQLITE_DONE) {
+        LOGE("SELECT 실행 중 오류 : %d", rc);
+        sqlite3_finalize(stmt);
+        throwException(env, "SELECT 실행 실패", rc);
+        return NULL;
+    }
+
+    sqlite3_finalize(stmt);
+    LOGD("loadByDateAndType 완료 : %s, type = %d", ymd, type);
+    return listObj;
+}
+
+// 날짜별 합계 조회
+JNIEXPORT jintArray JNICALL
+Java_com_example_allowancemanagement_db_NativeDb_getDailySum (
+        JNIEnv *env,
+        jclass clazz,
+        jint year,
+        jint month,
+        jint type
+        ) {
+    if (db == NULL) {
+        LOGE("DB not opened");
+        jintArray empty = (*env) -> NewIntArray(env, 0);
+        return empty;
+    }
+
+    // YYYY-MM 형식 만들기
+    char ym[8]; // YYYY-MM + \0
+    snprintf(ym, sizeof (ym), "%04d-%02d", (int)year, (int)month);
+
+    const char *sql =
+            "SELECT CAST(substr(date, 9, 2) AS INTEGER) AS day, "
+            "    SUM(amount) "
+            "FROM ACTIVITY_DB "
+            "WHERE date LIKE ? || '%' "
+            " AND type = ? "
+            "GROUP BY day "
+            "ORDER BY day;";
+
+    sqlite3_stmt *stmt = NULL;
+    int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        LOGE("계산 실패 %d", rc);
+        jintArray empty = (*env) -> NewIntArray(env, 0);
+        return empty;
+    }
+
+    // 바인딩
+    // 날짜 바인드
+    rc = sqlite3_bind_text(stmt, 1, ym, -1, SQLITE_TRANSIENT);
+    if (rc != SQLITE_OK) {
+        LOGE("getDailySum: 날짜 바인드 실패 rc=%d", rc);
+        sqlite3_finalize(stmt);
+        jintArray empty = (*env)->NewIntArray(env, 0);
+        return empty;
+    }
+    // 타입 바인드
+    rc = sqlite3_bind_int(stmt, 2, (int)type);
+    if (rc != SQLITE_OK) {
+        LOGE("getDailySum type 바인드 실패 rc = %d", rc);
+        sqlite3_finalize(stmt);
+        jintArray empty = (*env)->NewIntArray(env, 0);
+        return empty;
+    }
+
+    int capacity = 64;
+    int count = 0;
+    jint *buffer = (jint *) malloc(sizeof(jint) * capacity);
+    if (buffer == NULL) {
+        LOGE("getDailySum : malloc 실패");
+        sqlite3_finalize(stmt);
+        jintArray empty = (*env) -> NewIntArray(env, 0);
+        return empty;
+    }
+
+    LOGD("getDailySum: ym=%s, type=%d", ym, (int)type);
+
+    // 결과 읽기
+    while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
+        int day = sqlite3_column_int(stmt, 0);    // day
+        int sum = sqlite3_column_int(stmt, 1);    // SUM(amount)
+
+        // buffer 크기 부족하면 확장
+        if (count + 2 > capacity) {
+            int newCap = capacity * 2;
+            jint *newBuf = (jint *) realloc(buffer, sizeof(jint) * newCap);
+            if (newBuf == NULL) {
+                LOGE("getDailySum: realloc 실패");
+                free(buffer);
+                sqlite3_finalize(stmt);
+                jintArray empty = (*env)->NewIntArray(env, 0);
+                return empty;
+            }
+            buffer = newBuf;
+            capacity = newCap;
+        }
+
+        buffer[count++] = (jint) day;
+        buffer[count++] = (jint) sum;
+
+        LOGD("  row -> day=%d, sum=%d", day, sum);
+    }
+
+    if (rc != SQLITE_DONE) {
+        LOGE("getDailySum: step error rc=%d, msg=%s", rc, sqlite3_errmsg(db));
+    }
+
+    sqlite3_finalize(stmt);
+
+    // int[] 생성
+    jintArray result = (*env)->NewIntArray(env, count);
+    if (result == NULL) {
+        LOGE("getDailySum: NewIntArray 만들기 실패");
+        free(buffer);
+        return NULL;
+    }
+
+    (*env)->SetIntArrayRegion(env, result, 0, count, buffer);
+    free(buffer);
+
+    LOGD("getDailySum: return %d ", count);
+    return result;
+}
+
+
+// ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ INSERT ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
 JNIEXPORT jlong JNICALL
 Java_com_example_allowancemanagement_db_NativeDb_insertActivity(
         JNIEnv *env,
@@ -329,7 +540,7 @@ Java_com_example_allowancemanagement_db_NativeDb_insertActivity(
     return (jlong) lastId;
 }
 
-// UPDATE
+// ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ UPDATE ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
 JNIEXPORT void JNICALL
 Java_com_example_allowancemanagement_db_NativeDb_updateActivity(
         JNIEnv *env,
@@ -385,7 +596,7 @@ Java_com_example_allowancemanagement_db_NativeDb_updateActivity(
     LOGD("UPDATE 완료 -> id=%d, date=%s, desc=%s, amount=%d", id, date, desc, amount);
 }
 
-// Delete
+// ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ Delete ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
 JNIEXPORT void JNICALL
 Java_com_example_allowancemanagement_db_NativeDb_deleteActivity (
         JNIEnv *env,

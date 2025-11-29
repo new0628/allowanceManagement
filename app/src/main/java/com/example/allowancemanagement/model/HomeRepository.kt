@@ -1,6 +1,7 @@
 package com.example.allowancemanagement.model
 
 import com.example.allowancemanagement.db.NativeDb
+import com.example.allowancemanagement.db.NativeDb.getDailySum
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,6 +13,13 @@ class HomeRepository {
 
     private val _incomeList = MutableStateFlow<List<ActivityUI>>(emptyList())
     val incomeList : StateFlow<List<ActivityUI>> = _incomeList.asStateFlow()
+
+    // 특정 날짜 내역
+    private val _dayDetailList = MutableStateFlow<List<ActivityUI>>(emptyList())
+    val dayDatailList : StateFlow<List<ActivityUI>> = _dayDetailList.asStateFlow()
+
+    // 날짜별 합계
+    val dailySumMap = MutableStateFlow<Map<Int, Int>>(emptyMap())
 
     init {}
 
@@ -54,6 +62,7 @@ class HomeRepository {
     }
 
     // ─────────────── 불러오기 ───────────────
+    // 월 전체 내역 조회
     fun reloadFromDb (year : Int, month : Int, query : String) {
         val uiList : List<ActivityUI> = NativeDb.loadByMonthAndQuery(year, month, query).sortedWith(activityComparator)
 
@@ -62,4 +71,24 @@ class HomeRepository {
 
     }
 
+    // 특정 날짜 조회
+    fun loadDayDetail(year : Int, month : Int, day : Int, type : Int) {
+        val uiList = NativeDb.loadByDateAndType(year, month, day, type)
+        _dayDetailList.value = uiList
+    }
+
+    // 날짜별 합계 조회
+    fun loadDailySum(year : Int, month : Int, type : Int) {
+        val raw = NativeDb.getDailySum(year, month, type) ?: return
+
+        val map = mutableMapOf<Int, Int>()
+        var i = 0
+        while (i+1 < raw.size) {
+            val day = raw[i]
+            val sum = raw[i+1]
+            map[day] = sum
+            i += 2
+        }
+        dailySumMap.value = map
+    }
 }

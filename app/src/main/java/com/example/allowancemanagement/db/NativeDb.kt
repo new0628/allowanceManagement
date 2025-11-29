@@ -39,8 +39,17 @@ object NativeDb {
         query : String
     ) : List<ActivityUI>
 
+    external fun loadByDateAndType(
+        year : Int,
+        month : Int,
+        day : Int,
+        type : Int
+    ) : List<ActivityUI>
+
+    external fun getDailySum(year : Int, month : Int, type : Int) : IntArray
+
     // DELETE 함수
     external fun deleteActivity(id : Int)
-    // SELECT 함수
-    //external fun loadAll() : Array<ActivityUI>
+
+
 }

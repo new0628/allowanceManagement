@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.allowancemanagement.view.home.Home
 import com.example.allowancemanagement.view.monthStats.MonthStatsMain
+import com.example.allowancemanagement.view.yearStats.YearStatsMain
 import com.example.allowancemanagement.viewModel.HomeViewModel
 
 enum class MainTab {
@@ -46,7 +47,6 @@ fun MainView(homeViewModel: HomeViewModel) {
             )
         }
     ) { innerPadding ->
-        //val layoutDirection = LocalLayoutDirection.current
         when (selectedTab) {
             MainTab.HOME -> {
                 Home(
@@ -54,12 +54,6 @@ fun MainView(homeViewModel: HomeViewModel) {
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding)
-//                        .padding(
-//                            start = innerPadding.calculateStartPadding(layoutDirection),
-//                            top = innerPadding.calculateTopPadding(),
-//                            end = innerPadding.calculateEndPadding(layoutDirection),
-//                            bottom = 20.dp
-//                        )
                 )
             }
             MainTab.Stats -> {
@@ -71,7 +65,7 @@ fun MainView(homeViewModel: HomeViewModel) {
                 )
             }
             MainTab.Summary -> {
-                SummaryView()
+                YearStatsMain()
             }
         }
     }
@@ -95,14 +89,14 @@ fun BottomTabBar (selectedTab : MainTab, onTabSelected : (MainTab) -> Unit) {
         )
 
         BottomTabItem(
-            text = "통계",
+            text = "월 통계",
             isSelected = selectedTab == MainTab.Stats,
             onClick = { onTabSelected(MainTab.Stats) },
             modifier = Modifier.weight(1f)
         )
 
         BottomTabItem(
-            text = "요약",
+            text = "년 통계",
             isSelected = selectedTab == MainTab.Summary,
             onClick = { onTabSelected(MainTab.Summary) },
             modifier = Modifier.weight(1f)

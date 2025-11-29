@@ -104,7 +104,7 @@ fun Home(viewModel : HomeViewModel, modifier: Modifier = Modifier) {
             MonthSelector(
                 year = selectedYear,
                 month = selectedMonth,
-                onMonthChange = { y, m -> viewModel.updateSelectDate(y, m) })
+                onMonthChange = { y, m -> viewModel.updateSelectDate(y, m, selectedTab) })
 
             // 수입 / 지출 탭
             TabBar(

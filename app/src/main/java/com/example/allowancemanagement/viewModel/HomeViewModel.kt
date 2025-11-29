@@ -3,6 +3,7 @@ package com.example.allowancemanagement.viewModel
 import androidx.lifecycle.ViewModel
 import com.example.allowancemanagement.model.HomeRepository
 import com.example.allowancemanagement.model.ActivityUI
+import com.example.allowancemanagement.view.home.TabName
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,12 +31,18 @@ class HomeViewModel() : ViewModel() {
     val expenseList : StateFlow<List<ActivityUI>> = repo.expenseList
     val incomeList : StateFlow<List<ActivityUI>> = repo.incomeList
 
-//    private val activityComparator = compareBy<ActivityUI>(
-//        { it.date },
-//        { it.id }
-//    )
+    // 선택된 날짜 내역
+    val dayDetailList : StateFlow<List<ActivityUI>> = repo.dayDatailList
+    // 날짜뱔 합계
+    val dailySumMap = repo.dailySumMap
 
     // ─────────────── 아래부터 함수 ───────────────
+
+    fun loadInitialData() {
+        reloadFromDb()
+        updateBalance()
+    }
+
     private fun reloadFromDb() {
         val year = _selectedYear.value
         val month = _selectedMonth.value
@@ -43,9 +50,17 @@ class HomeViewModel() : ViewModel() {
         repo.reloadFromDb(year, month, query)
     }
 
-    fun loadInitialData() {
-        reloadFromDb()
-        updateBalance()
+    fun loadDailySum(tab : TabName) {
+        val type = if (tab == TabName.EXPENSE) 0 else 1
+        repo.loadDailySum(year = _selectedYear.value, month = _selectedMonth.value, type = type)
+    }
+
+    fun loadDayDetail(year : Int, month : Int, day : Int, tab : TabName) {
+        val type = when(tab) {
+            TabName.EXPENSE -> 0
+            TabName.INCOME -> 1
+        }
+        repo.loadDayDetail(year, month, day, type)
     }
 
     // 잔액 업데이트
@@ -59,28 +74,26 @@ class HomeViewModel() : ViewModel() {
         reloadFromDb()
     }
 
-    fun updateSelectDate(year : Int, month : Int) {
+    //
+    fun updateSelectDate(year : Int, month : Int, tab : TabName) {
         _selectedYear.value = year
         _selectedMonth.value = month
         reloadFromDb()
-    }
-
-    // 월 통계 때 사용
-    fun updateSelectMonthDate(year: Int, month: Int) {
-        _selectedYear.value = year
-        _selectedMonth.value = month
+        loadDailySum(tab)
     }
 
     fun addExpense(date : String, description : String, amount : Int) {
         repo.addExpense(date, description, amount)
         reloadFromDb()
         updateBalance()
+        loadDailySum(TabName.EXPENSE)
     }
 
     fun addIncome(date : String, description : String, amount : Int) {
         repo.addIncome(date, description, amount)
         reloadFromDb()
         updateBalance()
+        loadDailySum(TabName.INCOME)
     }
 
     fun updateExpense (original : ActivityUI, newDate : String, newDescription : String, newAmount : Int
@@ -88,24 +101,28 @@ class HomeViewModel() : ViewModel() {
         repo.updateExpense(original, newDate, newDescription, newAmount)
         reloadFromDb()
         updateBalance()
+        loadDailySum(TabName.EXPENSE)
     }
 
     fun updateIncome(original: ActivityUI, newDate: String, newDescription: String, newAmount: Int) {
         repo.updateIncome(original, newDate, newDescription, newAmount)
         reloadFromDb()
         updateBalance()
+        loadDailySum(TabName.INCOME)
     }
 
     fun removeExpense(item : ActivityUI) {
         repo.removeExpense(item)
         reloadFromDb()
         updateBalance()
+        loadDailySum(TabName.EXPENSE)
     }
 
     fun removeIncome(item : ActivityUI) {
         repo.removeIncome(item)
         reloadFromDb()
         updateBalance()
+        loadDailySum(TabName.INCOME)
     }
 
 }
