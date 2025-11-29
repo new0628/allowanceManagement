@@ -58,7 +58,7 @@ fun ActivityList (
     ) {
         items(
             items,
-            key = { it.id }
+            key = { it.hashCode() }
         ) { item ->
             TranslateItemName(
                 date = item.date,

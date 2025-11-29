@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.allowancemanagement.view.home.Home
+import com.example.allowancemanagement.view.monthStats.MonthStatsMain
 import com.example.allowancemanagement.viewModel.HomeViewModel
 
 enum class MainTab {
@@ -62,7 +63,12 @@ fun MainView(homeViewModel: HomeViewModel) {
                 )
             }
             MainTab.Stats -> {
-                StatsView()
+                MonthStatsMain(
+                    viewModel = homeViewModel,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                )
             }
             MainTab.Summary -> {
                 SummaryView()

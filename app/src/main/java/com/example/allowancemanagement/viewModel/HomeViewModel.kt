@@ -65,6 +65,12 @@ class HomeViewModel() : ViewModel() {
         reloadFromDb()
     }
 
+    // 월 통계 때 사용
+    fun updateSelectMonthDate(year: Int, month: Int) {
+        _selectedYear.value = year
+        _selectedMonth.value = month
+    }
+
     fun addExpense(date : String, description : String, amount : Int) {
         repo.addExpense(date, description, amount)
         reloadFromDb()

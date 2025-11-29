@@ -171,35 +171,35 @@ fun Home(viewModel : HomeViewModel, modifier: Modifier = Modifier) {
 
         val target = editTarget
         if (target != null) {
-            key(target.id) {
-                ActivityDialog(
-                    mode = DialogMode.EDIT,
-                    initialType = if (target.type == 0) ActivityType.EXPENSE else ActivityType.INCOME,
-                    initialDate = LocalDate.parse(target.date),
-                    initialDescription = target.description,
-                    initialAmount = target.amount,
-                    showTypeSelector = false,   // 수입/지출은 수정X
-                    onDismiss = { editTarget = null },
-                    onConfirm = { _, date, description, amount ->
-                        if (target.type == 0) {
-                            viewModel.updateExpense(
-                                original = target,
-                                newDate = date,
-                                newDescription = description,
-                                newAmount = amount
-                            )
-                        } else {
-                            viewModel.updateIncome(
-                                original = target,
-                                newDate = date,
-                                newDescription = description,
-                                newAmount = amount
-                            )
-                        }
-                        editTarget = null
+
+            ActivityDialog(
+                mode = DialogMode.EDIT,
+                initialType = if (target.type == 0) ActivityType.EXPENSE else ActivityType.INCOME,
+                initialDate = LocalDate.parse(target.date),
+                initialDescription = target.description,
+                initialAmount = target.amount,
+                showTypeSelector = false,   // 수입/지출은 수정X
+                onDismiss = { editTarget = null },
+                onConfirm = { _, date, description, amount ->
+                    if (target.type == 0) {
+                        viewModel.updateExpense(
+                            original = target,
+                            newDate = date,
+                            newDescription = description,
+                            newAmount = amount
+                        )
+                    } else {
+                        viewModel.updateIncome(
+                            original = target,
+                            newDate = date,
+                            newDescription = description,
+                            newAmount = amount
+                        )
                     }
-                )
-            }
+                    editTarget = null
+                }
+            )
+
         }
     }
 }

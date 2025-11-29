@@ -41,6 +41,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.IntOffset
+import java.time.ZoneId
 import kotlin.math.roundToInt
 
 enum class DialogMode {
@@ -86,6 +87,11 @@ fun ActivityDialog (
             initialDate.monthValue - 1,
             initialDate.dayOfMonth
         ).apply {
+            val minDate = LocalDate.of(2024, 1, 1)
+                .atStartOfDay(ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli()
+            datePicker.minDate = minDate
             datePicker.maxDate = System.currentTimeMillis()
         }
     }
@@ -179,6 +185,7 @@ fun ActivityDialog (
                         } },
                     label = { Text("내용") },
                     isError = descriptionError != null,
+                    singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
                 if (descriptionError != null) {
@@ -202,6 +209,7 @@ fun ActivityDialog (
                         } },
                     label = { Text("금액") },
                     isError = amountError != null,
+                    singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Number
