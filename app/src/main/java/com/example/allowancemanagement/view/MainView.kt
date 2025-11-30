@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -58,7 +59,8 @@ fun MainView() {
         bottomBar = {
             BottomTabBar(
                 selectedTab = selectedTab,
-                onTabSelected = { selectedTab = it }
+                onTabSelected = { selectedTab = it },
+                modifier = Modifier.navigationBarsPadding()
             )
         }
     ) { innerPadding ->
@@ -69,6 +71,7 @@ fun MainView() {
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding)
+                        //.navigationBarsPadding()
                 )
             }
             MainTab.MonthStats -> {
@@ -77,6 +80,7 @@ fun MainView() {
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding)
+                        //.navigationBarsPadding()
                 )
             }
             MainTab.YearStats -> {
@@ -85,6 +89,7 @@ fun MainView() {
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding)
+                        //.navigationBarsPadding()
                 )
             }
         }
@@ -92,9 +97,9 @@ fun MainView() {
 }
 
 @Composable
-fun BottomTabBar (selectedTab : MainTab, onTabSelected : (MainTab) -> Unit) {
+fun BottomTabBar (selectedTab : MainTab, onTabSelected : (MainTab) -> Unit, modifier: Modifier = Modifier) {
     Row (
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .height(65.dp)
             .background(Color.DarkGray),

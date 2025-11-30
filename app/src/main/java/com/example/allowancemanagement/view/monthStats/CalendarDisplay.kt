@@ -21,18 +21,18 @@ import androidx.compose.ui.unit.sp
 import java.util.Locale
 
 @Composable
-fun CalendarDisplay (year : Int, month : Int, dailyAmount : Map<Int, Int>, dailyAmountColor : Boolean, onDayClick : (Int) -> Unit = {}) {
+fun CalendarDisplay (year : Int, month : Int, dailyAmount : Map<Int, Int>, dailyAmountColor : Boolean, onDayClick : (Int) -> Unit = {}, modifier: Modifier = Modifier) {
     // 현재 월의 날짜 수
     val yearMonth = java.time.YearMonth.of(year, month)
     val daysInMonth = yearMonth.lengthOfMonth() // 1월이면 31일
-    // 이번달 1일 요일을 계산
+    // 이번달 1일이 무슨 요일인지 (달력 시작 위치 보정을 위함)
     val startWeek = java.time.LocalDate.of(year, month, 1).dayOfWeek.value % 7
 
     // dailyAmountColor가 지출이면 true, 수입이면 false
     val amountColor = if (dailyAmountColor) Color.Red else Color.Blue
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(10.dp)
     ) {
@@ -70,6 +70,7 @@ fun CalendarDisplay (year : Int, month : Int, dailyAmount : Map<Int, Int>, daily
                 ) {
                     repeat(7) { col ->
                         val cellIndex = col + (rowIndex * 7)
+                        // 날짜가 없는 빈칸
                         if (cellIndex < startWeek || dayNumber > daysInMonth) {
                             Box(modifier = Modifier
                                 .weight(1f)
@@ -77,6 +78,7 @@ fun CalendarDisplay (year : Int, month : Int, dailyAmount : Map<Int, Int>, daily
                             )
                         }
                         else {
+                            // 날짜가 있는칸
                             val thisDay = dayNumber
                             Column (
                                 modifier = Modifier

@@ -1,10 +1,10 @@
 package com.example.allowancemanagement.view.monthStats
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
+
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -28,9 +28,8 @@ import com.example.allowancemanagement.view.home.MonthSelector
 import com.example.allowancemanagement.view.home.TabBar
 import com.example.allowancemanagement.view.home.TabName
 import com.example.allowancemanagement.view.home.TranslateItemName
-import com.example.allowancemanagement.viewModel.HomeViewModel
 import com.example.allowancemanagement.viewModel.MonthStatsViewModel
-import java.time.LocalDate
+
 
 @Composable
 fun MonthStatsMain(viewModel : MonthStatsViewModel, modifier: Modifier = Modifier) {
@@ -40,8 +39,9 @@ fun MonthStatsMain(viewModel : MonthStatsViewModel, modifier: Modifier = Modifie
     var selectedTab by remember { mutableStateOf(TabName.EXPENSE) }
     // 선택된 날짜
     var selectedDay by remember { mutableStateOf<Int?>(null) }
+    // 선택된 날짜 상세 내역
     val dayDetailState = viewModel.dayDetailList.collectAsState()
-
+    // 일자별 합계 금액
     val dailyAmount by viewModel.dailySumMap.collectAsState()
 
     // 화면이 처음 열리거나 년/월/탭이 변경될때마다 계산
@@ -52,7 +52,7 @@ fun MonthStatsMain(viewModel : MonthStatsViewModel, modifier: Modifier = Modifie
     Column (
         modifier = modifier
             .fillMaxSize()
-            .padding(top = 20.dp),
+            .padding(top = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // 제목
@@ -60,10 +60,10 @@ fun MonthStatsMain(viewModel : MonthStatsViewModel, modifier: Modifier = Modifie
             text = "월 통계",
             fontSize = 30.sp,
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 10.dp)
+            //modifier = Modifier.padding(bottom = 10.dp)
         )
 
-        // 월 변경
+        // 월 변경 UI
         MonthSelector(
             year = selectedYear,
             month = selectedMonth,
@@ -81,63 +81,73 @@ fun MonthStatsMain(viewModel : MonthStatsViewModel, modifier: Modifier = Modifie
             }
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        //Spacer(modifier = Modifier.height(16.dp))
 
-        // 달력 UI
-        CalendarDisplay(
-            year = selectedYear,
-            month = selectedMonth,
-            dailyAmount = dailyAmount,
-            dailyAmountColor = (selectedTab == TabName.EXPENSE),
-            onDayClick = { day ->
-                selectedDay = day
-                viewModel.loadDayDetail(selectedYear, selectedMonth, day, selectedTab)
-            }
-        )
+        Column (
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+        ) {
+            // 달력 UI
+            CalendarDisplay(
+                year = selectedYear,
+                month = selectedMonth,
+                dailyAmount = dailyAmount,
+                dailyAmountColor = (selectedTab == TabName.EXPENSE),
+                onDayClick = { day ->
+                    selectedDay = day
+                    viewModel.loadDayDetail(selectedYear, selectedMonth, day, selectedTab)
+                },
+                //modifier = Modifier.weight(0.55f)
+            )
 
-        if (selectedDay != null) {
-            Spacer(modifier = Modifier.height(5.dp))
+            if (selectedDay != null) {
+                //Spacer(modifier = Modifier.height(5.dp))
 
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-            ) {
-                HorizontalDivider(
-                    thickness = 2.dp,
-                    modifier = Modifier.padding(horizontal = 10.dp),
-                    color = Color.LightGray
-                )
-
-                Spacer(modifier = Modifier.padding(top = 5.dp))
-
-                ItemTitle()
-
-                Spacer(modifier = Modifier.padding(top = 5.dp))
-
-                HorizontalDivider(
-                    thickness = 2.dp,
-                    modifier = Modifier.padding(horizontal = 10.dp),
-                    color = Color.LightGray
-                )
-
-                LazyColumn (
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 20.dp)
+                        .weight(1f)
                 ) {
-                    items (
-                        dayDetailState.value,
-                        key = { it.id }
-                    ) { item ->
-                        TranslateItemName(
-                            date = item.date,
-                            description = item.description,
-                            amount = item.amount
-                        )
+                    HorizontalDivider(
+                        thickness = 2.dp,
+                        modifier = Modifier.padding(horizontal = 10.dp),
+                        color = Color.LightGray
+                    )
+
+                    //Spacer(modifier = Modifier.padding(top = 5.dp))
+
+                    ItemTitle()
+
+                    //Spacer(modifier = Modifier.padding(top = 5.dp))
+
+                    HorizontalDivider(
+                        thickness = 2.dp,
+                        modifier = Modifier.padding(horizontal = 10.dp),
+                        color = Color.LightGray
+                    )
+
+                    // 선택된 날짜의 내역
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 20.dp)
+                    ) {
+                        items(
+                            dayDetailState.value,
+                            key = { it.id }
+                        ) { item ->
+                            TranslateItemName(
+                                date = item.date,
+                                description = item.description,
+                                amount = item.amount
+                            )
+                        }
+
                     }
                 }
             }
+
         }
     }
 }

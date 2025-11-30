@@ -1,23 +1,22 @@
 package com.example.allowancemanagement.view.yearStats
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+
+
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
+
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -27,9 +26,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.allowancemanagement.view.home.TabBar
 import com.example.allowancemanagement.view.home.TabName
-import com.example.allowancemanagement.viewModel.HomeViewModel
+
 import com.example.allowancemanagement.viewModel.YearStatsViewModel
-import java.time.LocalDate
+
 
 @Composable
 fun YearStatsMain(viewModel : YearStatsViewModel, modifier: Modifier = Modifier) {
@@ -48,16 +47,18 @@ fun YearStatsMain(viewModel : YearStatsViewModel, modifier: Modifier = Modifier)
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(top = 20.dp),
+            .padding(top = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // 화면 제목
         Text(
             text = "연 통계",
             fontSize = 30.sp,
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 10.dp)
+            //modifier = Modifier.padding(bottom = 10.dp)
         )
 
+        // 연도 선택 UI
         YearSelector(year = selectedYear, onYearChange = { newYear ->
             viewModel.updateYear(newYear)
         })
@@ -72,7 +73,15 @@ fun YearStatsMain(viewModel : YearStatsViewModel, modifier: Modifier = Modifier)
 
         Spacer(modifier = Modifier.height(3.dp))
 
-        YearMonthDisplay(year = selectedYear, monthSumMap = monthSumMap)
+        // 월별 금액 표시
+        Column (
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+        ) {
+            YearMonthDisplay(year = selectedYear, monthSumMap = monthSumMap)
+        }
+
     }
 }
 

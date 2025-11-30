@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 
 import androidx.compose.material.icons.Icons
@@ -37,7 +38,7 @@ import java.text.NumberFormat
 import java.time.LocalDate
 import java.util.Locale
 
-
+// 수입/지출 유형 구분 (DB에 저장될 값)
 enum class ActivityType(val code : Int) {
     EXPENSE(0), INCOME(1)
 }
@@ -71,6 +72,7 @@ fun Home(viewModel : HomeViewModel, modifier: Modifier = Modifier) {
             horizontalAlignment = Alignment.CenterHorizontally
         )
         {
+            // 상단 잔액 표시
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -130,17 +132,20 @@ fun Home(viewModel : HomeViewModel, modifier: Modifier = Modifier) {
             }
         }
 
+        // 내역 추가용 버튼
         FloatingActionButton(
             onClick = { showAddDialog = true },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(end = 20.dp, bottom = 10.dp)
+                //.padding(end = 20.dp, bottom = 10.dp)
+                .navigationBarsPadding()
         ) {
             Icon(
                 imageVector = Icons.Default.Add,
                 contentDescription = "데이터 추가"
             )
         }
+        // 추가 다이얼로그 표시
         if (showAddDialog) {
             ActivityDialog(
                 mode = DialogMode.ADD,
@@ -169,6 +174,7 @@ fun Home(viewModel : HomeViewModel, modifier: Modifier = Modifier) {
             )
         }
 
+        // 수정 다이얼로그
         val target = editTarget
         if (target != null) {
 
