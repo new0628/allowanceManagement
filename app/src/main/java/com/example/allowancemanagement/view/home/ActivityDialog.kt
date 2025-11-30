@@ -128,6 +128,7 @@ fun ActivityDialog (
                     IntOffset(shakeOffset.value.roundToInt(), 0)
                 }
             ) {
+                // 타입 선택 토글 버튼
                 if (showTypeSelector) {
                     Row(
                         modifier = Modifier
@@ -153,7 +154,7 @@ fun ActivityDialog (
                     }
                 }
 
-                // 날짜 달력
+                // 날짜 입력
                 OutlinedTextField(
                     value = dateText,
                     onValueChange = { },
@@ -175,7 +176,7 @@ fun ActivityDialog (
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                //  내용
+                //  내용 입력
                 OutlinedTextField(
                     value = description,
                     onValueChange = {
@@ -199,7 +200,7 @@ fun ActivityDialog (
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // 금액
+                // 금액 입력
                 OutlinedTextField(
                     value = amountText,
                     onValueChange = {
@@ -215,6 +216,7 @@ fun ActivityDialog (
                         keyboardType = KeyboardType.Number
                     )
                 )
+
                 if (amountError != null) {
                     Text(
                         text = amountError!!,
@@ -247,7 +249,7 @@ fun ActivityDialog (
                         amountError = "금액은 0보다 커야 합니다"
                         isValid = true
                     }
-
+                    // 에러가 있으면 흔들기 애니메이션
                     if (isValid) {
                         scope.launch {
                             shakeOffset.snapTo(0f)

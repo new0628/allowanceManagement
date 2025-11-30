@@ -32,13 +32,13 @@ class HomeViewModel() : ViewModel() {
     val incomeList : StateFlow<List<ActivityUI>> = repo.incomeList
 
     // ─────────────── 아래부터 함수 ───────────────
-
+    // 초기 데이터 로드
     fun loadInitialData() {
         reloadFromDb()
         updateBalance()
         // loadDailySum(TabName.EXPENSE)
     }
-
+    // DB에서 년/월 검색어 기준 리스트 로드
     private fun reloadFromDb() {
         val year = _selectedYear.value
         val month = _selectedMonth.value
@@ -57,55 +57,54 @@ class HomeViewModel() : ViewModel() {
         reloadFromDb()
     }
 
-    //
+    // 날짜 변경
     fun updateSelectDate(year : Int, month : Int, tab : TabName) {
         _selectedYear.value = year
         _selectedMonth.value = month
         reloadFromDb()
-        // loadDailySum(tab)
     }
 
+    // 지출 추가
     fun addExpense(date : String, description : String, amount : Int) {
         repo.addExpense(date, description, amount)
         reloadFromDb()
         updateBalance()
-        // loadDailySum(TabName.EXPENSE)
     }
 
+    // 수입 추가
     fun addIncome(date : String, description : String, amount : Int) {
         repo.addIncome(date, description, amount)
         reloadFromDb()
         updateBalance()
-        // loadDailySum(TabName.INCOME)
     }
 
+    // 지출 수정
     fun updateExpense (original : ActivityUI, newDate : String, newDescription : String, newAmount : Int
     ) {
         repo.updateExpense(original, newDate, newDescription, newAmount)
         reloadFromDb()
         updateBalance()
-        // loadDailySum(TabName.EXPENSE)
     }
 
+    // 수입 수정
     fun updateIncome(original: ActivityUI, newDate: String, newDescription: String, newAmount: Int) {
         repo.updateIncome(original, newDate, newDescription, newAmount)
         reloadFromDb()
         updateBalance()
-        // loadDailySum(TabName.INCOME)
     }
 
+    // 지출 삭제
     fun removeExpense(item : ActivityUI) {
         repo.removeExpense(item)
         reloadFromDb()
         updateBalance()
-        // loadDailySum(TabName.EXPENSE)
     }
 
+    // 수입 삭제
     fun removeIncome(item : ActivityUI) {
         repo.removeIncome(item)
         reloadFromDb()
         updateBalance()
-        // loadDailySum(TabName.INCOME)
     }
 
 }

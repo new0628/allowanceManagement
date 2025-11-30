@@ -19,10 +19,12 @@ class YearStatsViewModel : ViewModel() {
     val monthSumMap = yearRepo.monthSumMap
 
     // ───────── 함수들 ─────────
+    // 선택된 연도 업데이트
     fun updateYear(year : Int) {
         _selectedYear.value = year
     }
 
+    // 월별 합계 로드 (지출/수입)
     fun loadMonthSum(year : Int, tab : TabName) {
         val type = when (tab) {
             TabName.EXPENSE -> 0

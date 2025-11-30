@@ -1,11 +1,9 @@
 package com.example.allowancemanagement.view.home
 
 import android.util.Log
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
+
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.interaction.PressInteraction
-import androidx.compose.foundation.layout.Arrangement
+
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -52,6 +50,7 @@ fun ItemTitle() {
     }
 }
 
+// 거래 내역 한줄 표시
 @Composable
 fun TranslateItemName (date : String, description : String, amount : Int, onClick : () -> Unit = {}, onLongPress : () -> Unit = {}) {
     val showDate = remember(date) { formatDateForUI(date) }
@@ -75,19 +74,15 @@ fun TranslateItemName (date : String, description : String, amount : Int, onClic
                 .fillMaxWidth()
                 .padding(horizontal = 30.dp, vertical = 8.dp),
         ) {
+            // 날짜
             Text (
                 text = showDate,
                 modifier = Modifier.weight(1f),
                 fontSize = 16.sp,
                 color = MaterialTheme.colorScheme.onBackground
             )
-//            VerticalDivider(
-//                modifier = Modifier
-//                    .height(20.dp)
-//                    .padding(horizontal = 4.dp),
-//                color = Color.LightGray,
-//                thickness = 1.dp
-//            )
+
+            // 내용
             Text (
                 text = description,
                 modifier = Modifier
@@ -96,13 +91,8 @@ fun TranslateItemName (date : String, description : String, amount : Int, onClic
                 fontSize = 16.sp,
                 color = MaterialTheme.colorScheme.onBackground
             )
-//            VerticalDivider(
-//                modifier = Modifier
-//                    .height(20.dp)
-//                    .padding(horizontal = 4.dp),
-//                color = Color.LightGray,
-//                thickness = 1.dp
-//            )
+
+            // 금액
             Text (
                 text = amount.toString() + "원",
                 modifier = Modifier.weight(1f),

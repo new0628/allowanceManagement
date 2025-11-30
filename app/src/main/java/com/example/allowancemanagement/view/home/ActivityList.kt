@@ -20,7 +20,6 @@ import androidx.compose.foundation.lazy.items
 import com.example.allowancemanagement.model.ActivityUI
 
 // 수입 / 지출 리스트 UI
-
 @Composable
 fun ActivityList (
     items : List<ActivityUI>,
@@ -51,6 +50,7 @@ fun ActivityList (
         color = Color.LightGray
     )
 
+    // 내역 리스트
     LazyColumn (
         modifier = Modifier
             .fillMaxWidth()

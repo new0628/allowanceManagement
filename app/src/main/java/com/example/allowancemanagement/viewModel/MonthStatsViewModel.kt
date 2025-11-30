@@ -25,17 +25,20 @@ class MonthStatsViewModel : ViewModel() {
     val dailySumMap = monthRepo.dailySumMap
 
     // ───────── 함수들 ─────────
+    // 선택된 연/월 업데이트
     fun updateSelectDate(year : Int, month : Int) { // tab : TabName
         _selectedYear.value = year
         _selectedMonth.value = month
-        //loadDailySum(tab)
+
     }
 
+    // 일일 합계 로드 (지출/수입)
     fun loadDailySum(tab : TabName) {
         val type = if (tab == TabName.EXPENSE) 0 else 1
         monthRepo.loadDailySum(year = _selectedYear.value, month = _selectedMonth.value, type = type)
     }
 
+    // 특정 날짜의 내역 로드
     fun loadDayDetail(year : Int, month : Int, day : Int, tab : TabName) {
         val type = when(tab) {
             TabName.EXPENSE -> 0

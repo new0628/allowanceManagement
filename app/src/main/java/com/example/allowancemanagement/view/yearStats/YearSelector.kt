@@ -15,7 +15,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.time.LocalDate
@@ -33,6 +32,7 @@ fun YearSelector (year : Int, onYearChange : (Int) -> Unit) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ){
+        // <- 버튼
         IconButton (
             onClick = {
                 if (year > minYear) {
@@ -48,12 +48,14 @@ fun YearSelector (year : Int, onYearChange : (Int) -> Unit) {
             )
         }
 
+        // 현재 연도 표시
         Text (
             text = formatYear,
             fontSize = 22.sp,
             color = MaterialTheme.colorScheme.onBackground
         )
 
+        // -> 버튼
         IconButton(
             onClick = {
                 if (year < currentYear) {
