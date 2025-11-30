@@ -14,9 +14,10 @@ import androidx.activity.viewModels
 import com.example.allowancemanagement.db.NativeDb
 import com.example.allowancemanagement.model.HomeRepository
 import com.example.allowancemanagement.view.MainView
+import com.example.allowancemanagement.viewModel.MonthStatsViewModel
+import com.example.allowancemanagement.viewModel.YearStatsViewModel
 
 class MainActivity : ComponentActivity() {
-    private val homeVm : HomeViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,10 +26,9 @@ class MainActivity : ComponentActivity() {
         NativeDb.open(db.absolutePath)
         NativeDb.debugPrintAll()
 
-        homeVm.loadInitialData()
         setContent {
             AllowanceManagementTheme {
-                MainView(homeViewModel = homeVm)
+                MainView()
             }
         }
     }

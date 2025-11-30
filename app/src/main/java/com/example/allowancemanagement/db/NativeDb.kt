@@ -48,6 +48,8 @@ object NativeDb {
 
     external fun getDailySum(year : Int, month : Int, type : Int) : IntArray
 
+    external fun getMonthSum(year : Int, type : Int) : IntArray
+
     // DELETE 함수
     external fun deleteActivity(id : Int)
 

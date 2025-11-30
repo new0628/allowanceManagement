@@ -18,8 +18,9 @@ class HomeRepository {
     private val _dayDetailList = MutableStateFlow<List<ActivityUI>>(emptyList())
     val dayDatailList : StateFlow<List<ActivityUI>> = _dayDetailList.asStateFlow()
 
-    // 날짜별 합계
+    // 날짜별 (일, 월)합계
     val dailySumMap = MutableStateFlow<Map<Int, Int>>(emptyMap())
+    val monthSumMap = MutableStateFlow<Map<Int, Int>>(emptyMap())
 
     init {}
 
@@ -77,7 +78,7 @@ class HomeRepository {
         _dayDetailList.value = uiList
     }
 
-    // 날짜별 합계 조회
+    // 날짜(일)별 합계 조회
     fun loadDailySum(year : Int, month : Int, type : Int) {
         val raw = NativeDb.getDailySum(year, month, type) ?: return
 
@@ -90,5 +91,21 @@ class HomeRepository {
             i += 2
         }
         dailySumMap.value = map
+    }
+
+    //날짜(월)별 합계 조회
+    fun loadMonthSum(yaer : Int, type : Int) {
+        val raw = NativeDb.getMonthSum(yaer, type) ?: return
+
+        val map = mutableMapOf<Int, Int>()
+        var i = 0
+
+        while (i + 1 < raw.size) {
+            val month = raw[i]
+            val sum = raw[i + 1]
+            map[month] = sum
+            i += 2
+        }
+        monthSumMap.value = map
     }
 }

@@ -59,6 +59,11 @@ Java_com_example_allowancemanagement_db_NativeDb_debugPrintAll(
         LOGD("ROW -> id=%d, type=%d, date=%s, desc=%s, amount=%d",
              id, type, date, desc, amount);
     }
+    if (rc != SQLITE_DONE) {
+        LOGE("debugPrintAll : step 에러 rc = %d", rc);
+        sqlite3_finalize(stmt);
+        return;
+    }
 
     LOGD("==== DB 내용 출력 끝 ====");
 
@@ -86,6 +91,7 @@ Java_com_example_allowancemanagement_db_NativeDb_open (
     if (rc != SQLITE_OK) {
         LOGE("sqlite3 열기 실패 : %d", rc);
         throwException(env, "db를 열 수 없음", rc);
+        sqlite3_close(db);
         db = NULL;
         return;
     }
@@ -104,6 +110,9 @@ Java_com_example_allowancemanagement_db_NativeDb_open (
     if (rc != SQLITE_OK) {
         LOGE("테이블 생성 실패 : %d", rc);
         throwException(env, "ACTIVITY_DB 테이블 생성 실패", rc);
+        sqlite3_close(db);
+        db = NULL;
+        return;
     }
     LOGD("DB 열림 및 테이블 준비 완료");
 }
@@ -162,6 +171,7 @@ Java_com_example_allowancemanagement_db_NativeDb_getBalance(
 }
 
 // ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ SELECT ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
+// 한달 전체 조회
 JNIEXPORT jobject JNICALL
 Java_com_example_allowancemanagement_db_NativeDb_loadByMonthAndQuery(
         JNIEnv *env,
@@ -201,7 +211,14 @@ Java_com_example_allowancemanagement_db_NativeDb_loadByMonthAndQuery(
     }
 
     // 년-월
-    sqlite3_bind_text(stmt, 1, ym, -1, SQLITE_TRANSIENT);
+    rc = sqlite3_bind_text(stmt, 1, ym, -1, SQLITE_TRANSIENT);
+    if (rc != SQLITE_OK) {
+        LOGE("loadByMonthAndQuery: ym 바인드 실패 rc=%d", rc);
+        sqlite3_finalize(stmt);
+        (*env)->ReleaseStringUTFChars(env, jQuery, query);
+        throwException(env, "ym 바인드 실패", rc);
+        return NULL;
+    }
 
     // like 패턴
     char likeBuf[256];
@@ -211,7 +228,14 @@ Java_com_example_allowancemanagement_db_NativeDb_loadByMonthAndQuery(
     else {
         snprintf(likeBuf, sizeof(likeBuf), "%%");
     }
-    sqlite3_bind_text(stmt, 2, likeBuf, -1, SQLITE_TRANSIENT);
+    rc = sqlite3_bind_text(stmt, 2, likeBuf, -1, SQLITE_TRANSIENT);
+    if (rc != SQLITE_OK) {
+        LOGE("loadByMonthAndQuery: like 패턴 바인드 실패 rc=%d", rc);
+        sqlite3_finalize(stmt);
+        (*env)->ReleaseStringUTFChars(env, jQuery, query);
+        throwException(env, "LIKE 바인드 실패", rc);
+        return NULL;
+    }
 
     jclass listClass = (*env) -> FindClass(env, "java/util/ArrayList");
     jmethodID listCtor = (*env) -> GetMethodID(env, listClass, "<init>", "()V");
@@ -310,8 +334,21 @@ Java_com_example_allowancemanagement_db_NativeDb_loadByDateAndType (
     }
 
     // 바인딩
-    sqlite3_bind_text(stmt, 1, ymd, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_int(stmt, 2, type);
+    rc = sqlite3_bind_text(stmt, 1, ymd, -1, SQLITE_TRANSIENT);
+    if (rc != SQLITE_OK) {
+        LOGE("loadByDateAndType: date 바인드 실패 rc=%d", rc);
+        sqlite3_finalize(stmt);
+        throwException(env, "date 바인드 실패", rc);
+        return NULL;
+    }
+
+    rc = sqlite3_bind_int(stmt, 2, type);
+    if (rc != SQLITE_OK) {
+        LOGE("loadByDateAndType: type 바인드 실패 rc=%d", rc);
+        sqlite3_finalize(stmt);
+        throwException(env, "type 바인드 실패", rc);
+        return NULL;
+    }
 
     // ArrayList
     jclass listClass = (*env) -> FindClass(env, "java/util/ArrayList");
@@ -367,7 +404,7 @@ Java_com_example_allowancemanagement_db_NativeDb_loadByDateAndType (
     return listObj;
 }
 
-// 날짜별 합계 조회
+// 날짜(일)별 합계 조회
 JNIEXPORT jintArray JNICALL
 Java_com_example_allowancemanagement_db_NativeDb_getDailySum (
         JNIEnv *env,
@@ -460,7 +497,11 @@ Java_com_example_allowancemanagement_db_NativeDb_getDailySum (
     }
 
     if (rc != SQLITE_DONE) {
-        LOGE("getDailySum: step error rc=%d, msg=%s", rc, sqlite3_errmsg(db));
+        LOGE("getDailySum: step error rc=%d", rc);
+        free(buffer);
+        sqlite3_finalize(stmt);
+        jintArray empty = (*env)->NewIntArray(env, 0);
+        return empty;
     }
 
     sqlite3_finalize(stmt);
@@ -477,6 +518,120 @@ Java_com_example_allowancemanagement_db_NativeDb_getDailySum (
     free(buffer);
 
     LOGD("getDailySum: return %d ", count);
+    return result;
+}
+
+// 날짜(달)별 합계 조회
+JNIEXPORT jintArray JNICALL
+Java_com_example_allowancemanagement_db_NativeDb_getMonthSum (
+        JNIEnv *env,
+        jclass clazz,
+        jint jYear,
+        jint jType
+        ) {
+    if (db == NULL) {
+        LOGE("데이터베이스가 안열려 있음");
+        jintArray empty = (*env) -> NewIntArray(env, 0);
+        return empty;
+    }
+
+    int year = (int) jYear;
+    int type = (int) jType;
+
+    char y[5]; //YYYY
+    snprintf(y, sizeof(y), "%04d", year);
+
+    const char *sql =
+            "SELECT "
+            " CAST(strftime('%m', date) AS INTEGER) AS month, "
+            " SUM(amount) "
+            "FROM ACTIVITY_DB "
+            "WHERE strftime('%Y', date) = ? "
+            " AND type = ? "
+            "GROUP BY month "
+            "ORDER BY month;";
+
+    sqlite3_stmt *stmt = NULL;
+    int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        LOGE("월별 합계 조회 준비 실패 : rc = %d", rc);
+        jintArray empty = (*env) -> NewIntArray(env, 0);
+        return empty;
+    }
+
+    rc = sqlite3_bind_text(stmt, 1, y, -1, SQLITE_TRANSIENT);
+    if (rc != SQLITE_OK) {
+        LOGE("연도 바인딩 실패 : rc = %d", rc);
+        sqlite3_finalize(stmt);
+        jintArray empty = (*env) -> NewIntArray(env, 0);
+        return empty;
+    }
+
+    rc = sqlite3_bind_int(stmt, 2, type);
+    if (rc != SQLITE_OK) {
+        LOGE("타입 바인딩 실패 : rc = %d", rc);
+        sqlite3_finalize(stmt);
+        jintArray empty = (*env) -> NewIntArray(env, 0);
+        return empty;
+    }
+
+    int capacity = 64;
+    int count = 0;
+    jint *buffer = (jint *) malloc(sizeof(jint) * capacity);
+    if (buffer == NULL) {
+        LOGE("메모리 할당 실패");
+        sqlite3_finalize(stmt);
+        jintArray empty = (*env) -> NewIntArray(env, 0);
+        return empty;
+    }
+
+    LOGD("월별 합계 조회 시작 : year : %s, type = %d", y, type);
+
+    while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
+        int month = sqlite3_column_int(stmt, 0);
+        int sum = sqlite3_column_int(stmt, 1);
+
+        if (count + 2 > capacity) {
+            int newCap = capacity * 2;
+            jint  *newBuf = (jint *) realloc(buffer, sizeof(jint) * newCap);
+            if (newBuf == NULL) {
+                LOGE("메모리 재할당 실패");
+                free(buffer);
+                sqlite3_finalize(stmt);
+                jintArray empty = (*env) -> NewIntArray(env, 0);
+                return empty;
+            }
+            buffer = newBuf;
+            capacity = newCap;
+        }
+
+        buffer[count++] = (jint) month;
+        buffer[count++] = (jint) sum;
+
+        LOGD("조회 결과 : month = %d, sum = %d", month, sum);
+    }
+    if (rc != SQLITE_DONE) {
+        LOGE("SQLite 스텝 오류 : rc = %d", rc);
+        free(buffer);
+        sqlite3_finalize(stmt);
+        jintArray empty = (*env) -> NewIntArray(env, 0);
+        return empty;
+    }
+
+    sqlite3_finalize(stmt);
+
+    // int[] 생성
+    jintArray result = (*env) -> NewIntArray(env, count);
+    if (result == NULL) {
+        LOGE("배열 생성 실패");
+        free(buffer);
+        return NULL;
+    }
+
+    (*env) -> SetIntArrayRegion(env, result, 0, count, buffer);
+    free(buffer);
+
+    LOGD("월별 합계 조회 완료 : 반환된 int 개수 = %d", count);
     return result;
 }
 
@@ -507,7 +662,6 @@ Java_com_example_allowancemanagement_db_NativeDb_insertActivity(
 
     sqlite3_stmt* stmt = NULL;
     int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
-
     if (rc != SQLITE_OK) {
         LOGE("삽입 실패 : %d", rc);
         (*env) -> ReleaseStringUTFChars(env, jDate, date);
@@ -516,10 +670,45 @@ Java_com_example_allowancemanagement_db_NativeDb_insertActivity(
         return -1;
     }
 
-    sqlite3_bind_int(stmt, 1, type);
-    sqlite3_bind_text(stmt, 2, date, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 3, desc, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_int(stmt, 4, amount);
+    rc = sqlite3_bind_int(stmt, 1, type);
+    if (rc != SQLITE_OK) {
+        LOGE("bind type 실패 : %d", rc);
+        sqlite3_finalize(stmt);
+        (*env)->ReleaseStringUTFChars(env, jDate, date);
+        (*env)->ReleaseStringUTFChars(env, jDescription, desc);
+        throwException(env, "INSERT bind(type) 실패", rc);
+        return -1;
+    }
+
+    rc = sqlite3_bind_text(stmt, 2, date, -1, SQLITE_TRANSIENT);
+    if (rc != SQLITE_OK) {
+        LOGE("bind date 실패 : %d", rc);
+        sqlite3_finalize(stmt);
+        (*env)->ReleaseStringUTFChars(env, jDate, date);
+        (*env)->ReleaseStringUTFChars(env, jDescription, desc);
+        throwException(env, "INSERT bind(date) 실패", rc);
+        return -1;
+    }
+
+    rc = sqlite3_bind_text(stmt, 3, desc, -1, SQLITE_TRANSIENT);
+    if (rc != SQLITE_OK) {
+        LOGE("bind description 실패 : %d", rc);
+        sqlite3_finalize(stmt);
+        (*env)->ReleaseStringUTFChars(env, jDate, date);
+        (*env)->ReleaseStringUTFChars(env, jDescription, desc);
+        throwException(env, "INSERT bind(description) 실패", rc);
+        return -1;
+    }
+
+    rc = sqlite3_bind_int(stmt, 4, amount);
+    if (rc != SQLITE_OK) {
+        LOGE("bind amount 실패 : %d", rc);
+        sqlite3_finalize(stmt);
+        (*env)->ReleaseStringUTFChars(env, jDate, date);
+        (*env)->ReleaseStringUTFChars(env, jDescription, desc);
+        throwException(env, "INSERT bind(amount) 실패", rc);
+        return -1;
+    }
 
     rc = sqlite3_step(stmt);
     if (rc != SQLITE_DONE) {
@@ -532,6 +721,7 @@ Java_com_example_allowancemanagement_db_NativeDb_insertActivity(
     }
 
     sqlite3_finalize(stmt);
+    // release 메모리
     (*env) -> ReleaseStringUTFChars(env, jDate, date);
     (*env) -> ReleaseStringUTFChars(env, jDescription, desc);
 
@@ -574,10 +764,45 @@ Java_com_example_allowancemanagement_db_NativeDb_updateActivity(
         return;
     }
 
-    sqlite3_bind_text(stmt, 1, date, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 2, desc, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_int(stmt, 3, amount);
-    sqlite3_bind_int(stmt, 4, id);
+    rc = sqlite3_bind_text(stmt, 1, date, -1, SQLITE_TRANSIENT);
+    if (rc != SQLITE_OK) {
+        LOGE("업데이트 bind date 실패 : %d", rc);
+        sqlite3_finalize(stmt);
+        (*env)->ReleaseStringUTFChars(env, jDate, date);
+        (*env)->ReleaseStringUTFChars(env, jDescription, desc);
+        throwException(env, "업데이트 bind(date) 중 오류", rc);
+        return;
+    }
+
+    rc = sqlite3_bind_text(stmt, 2, desc, -1, SQLITE_TRANSIENT);
+    if (rc != SQLITE_OK) {
+        LOGE("업데이트 bind desc 실패 : %d", rc);
+        sqlite3_finalize(stmt);
+        (*env)->ReleaseStringUTFChars(env, jDate, date);
+        (*env)->ReleaseStringUTFChars(env, jDescription, desc);
+        throwException(env, "업데이트 bind(description) 중 오류", rc);
+        return;
+    }
+
+    rc = sqlite3_bind_int(stmt, 3, amount);
+    if (rc != SQLITE_OK) {
+        LOGE("업데이트 bind amount 실패 : %d", rc);
+        sqlite3_finalize(stmt);
+        (*env)->ReleaseStringUTFChars(env, jDate, date);
+        (*env)->ReleaseStringUTFChars(env, jDescription, desc);
+        throwException(env, "업데이트 bind(amount) 중 오류", rc);
+        return;
+    }
+
+    rc = sqlite3_bind_int(stmt, 4, id);
+    if (rc != SQLITE_OK) {
+        LOGE("업데이트 bind id 실패 : %d", rc);
+        sqlite3_finalize(stmt);
+        (*env)->ReleaseStringUTFChars(env, jDate, date);
+        (*env)->ReleaseStringUTFChars(env, jDescription, desc);
+        throwException(env, "업데이트 bind(id) 중 오류", rc);
+        return;
+    }
 
     rc = sqlite3_step(stmt);
     if (rc != SQLITE_DONE) {
@@ -619,7 +844,14 @@ Java_com_example_allowancemanagement_db_NativeDb_deleteActivity (
         return;
     }
 
-    sqlite3_bind_int(stmt, 1, id);
+    rc = sqlite3_bind_int(stmt, 1, id);
+    if (rc != SQLITE_OK) {
+        LOGE("DELETE bind 실패 : %d", rc);
+        sqlite3_finalize(stmt);
+        throwException(env, "DELETE bind 중 오류 발생", rc);
+        return;
+    }
+
     rc = sqlite3_step(stmt);
     if (rc != SQLITE_DONE) {
         LOGE("DELETE 실행 실패 : %d", rc);

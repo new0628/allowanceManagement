@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,20 +25,34 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.allowancemanagement.view.home.Home
 import com.example.allowancemanagement.view.monthStats.MonthStatsMain
 import com.example.allowancemanagement.view.yearStats.YearStatsMain
 import com.example.allowancemanagement.viewModel.HomeViewModel
+import com.example.allowancemanagement.viewModel.MonthStatsViewModel
+import com.example.allowancemanagement.viewModel.YearStatsViewModel
+
 
 enum class MainTab {
     HOME,
-    Stats,
-    Summary
+    MonthStats,
+    YearStats
 }
 
 @Composable
-fun MainView(homeViewModel: HomeViewModel) {
+fun MainView() {
+    val homeVm: HomeViewModel = viewModel()
+    val monthVm: MonthStatsViewModel = viewModel()
+    val yearVm: YearStatsViewModel = viewModel()
+
     var selectedTab by remember { mutableStateOf(MainTab.HOME) }
+
+    // 최초 1회만 실행
+    LaunchedEffect(Unit) {
+        homeVm.loadInitialData()
+    }
+
 
     Scaffold (
         bottomBar = {
@@ -50,22 +65,27 @@ fun MainView(homeViewModel: HomeViewModel) {
         when (selectedTab) {
             MainTab.HOME -> {
                 Home(
-                    viewModel = homeViewModel,
+                    viewModel = homeVm,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding)
                 )
             }
-            MainTab.Stats -> {
+            MainTab.MonthStats -> {
                 MonthStatsMain(
-                    viewModel = homeViewModel,
+                    viewModel = monthVm,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding)
                 )
             }
-            MainTab.Summary -> {
-                YearStatsMain()
+            MainTab.YearStats -> {
+                YearStatsMain(
+                    viewModel = yearVm,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                )
             }
         }
     }
@@ -90,15 +110,15 @@ fun BottomTabBar (selectedTab : MainTab, onTabSelected : (MainTab) -> Unit) {
 
         BottomTabItem(
             text = "월 통계",
-            isSelected = selectedTab == MainTab.Stats,
-            onClick = { onTabSelected(MainTab.Stats) },
+            isSelected = selectedTab == MainTab.MonthStats,
+            onClick = { onTabSelected(MainTab.MonthStats) },
             modifier = Modifier.weight(1f)
         )
 
         BottomTabItem(
-            text = "년 통계",
-            isSelected = selectedTab == MainTab.Summary,
-            onClick = { onTabSelected(MainTab.Summary) },
+            text = "연 통계",
+            isSelected = selectedTab == MainTab.YearStats,
+            onClick = { onTabSelected(MainTab.YearStats) },
             modifier = Modifier.weight(1f)
         )
     }

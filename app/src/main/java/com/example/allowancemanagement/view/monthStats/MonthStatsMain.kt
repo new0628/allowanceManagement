@@ -12,6 +12,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,10 +29,11 @@ import com.example.allowancemanagement.view.home.TabBar
 import com.example.allowancemanagement.view.home.TabName
 import com.example.allowancemanagement.view.home.TranslateItemName
 import com.example.allowancemanagement.viewModel.HomeViewModel
+import com.example.allowancemanagement.viewModel.MonthStatsViewModel
 import java.time.LocalDate
 
 @Composable
-fun MonthStatsMain(viewModel : HomeViewModel, modifier: Modifier = Modifier) {
+fun MonthStatsMain(viewModel : MonthStatsViewModel, modifier: Modifier = Modifier) {
 
     val selectedYear by viewModel.selectedYear.collectAsState()
     val selectedMonth by viewModel.selectedMonth.collectAsState()
@@ -42,28 +44,15 @@ fun MonthStatsMain(viewModel : HomeViewModel, modifier: Modifier = Modifier) {
 
     val dailyAmount by viewModel.dailySumMap.collectAsState()
 
-//    val expenseListState = viewModel.expenseList.collectAsState()
-//    val incomeListState = viewModel.incomeList.collectAsState()
-//
-//    // 지출 / 수입에따라 금액 계산
-//    val baseList = when (selectedTab) {
-//        TabName.EXPENSE -> expenseListState.value
-//        TabName.INCOME -> incomeListState.value
-//    }
-    // 날짜별 금액 카운트
-//    val dailyAmount : Map<Int, Int> = remember (baseList, selectedYear, selectedMonth) {
-//        val yearMonthTranslate = "%04d-%02d".format(selectedYear, selectedMonth)
-//
-//        baseList.filter { it.date.startsWith(yearMonthTranslate) }
-//            .groupBy { (LocalDate.parse(it.date).dayOfMonth) }
-//            .mapValues { (_, dayItems) ->
-//                dayItems.sumOf { it.amount }
-//            }
-//    }
+    // 화면이 처음 열리거나 년/월/탭이 변경될때마다 계산
+    LaunchedEffect(selectedYear, selectedMonth, selectedTab) {
+        viewModel.loadDailySum(selectedTab)
+    }
+
     Column (
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
-            .padding(top = 80.dp),
+            .padding(top = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // 제목
@@ -71,7 +60,7 @@ fun MonthStatsMain(viewModel : HomeViewModel, modifier: Modifier = Modifier) {
             text = "월 통계",
             fontSize = 30.sp,
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 20.dp)
+            modifier = Modifier.padding(bottom = 10.dp)
         )
 
         // 월 변경
@@ -79,7 +68,7 @@ fun MonthStatsMain(viewModel : HomeViewModel, modifier: Modifier = Modifier) {
             year = selectedYear,
             month = selectedMonth,
             onMonthChange = { y, m ->
-                viewModel.updateSelectDate(y, m, selectedTab)
+                viewModel.updateSelectDate(y, m)
                 selectedDay = null
                             },
         )
@@ -89,8 +78,6 @@ fun MonthStatsMain(viewModel : HomeViewModel, modifier: Modifier = Modifier) {
             selectedTab = selectedTab,
             onTabSelected = { tab ->
                 selectedTab = tab
-                selectedDay = null
-                viewModel.loadDailySum(tab)
             }
         )
 
@@ -137,7 +124,7 @@ fun MonthStatsMain(viewModel : HomeViewModel, modifier: Modifier = Modifier) {
                 LazyColumn (
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 80.dp)
+                        .padding(bottom = 20.dp)
                 ) {
                     items (
                         dayDetailState.value,
