@@ -53,7 +53,7 @@ fun ItemTitle() {
 }
 
 @Composable
-fun TranslateItemName (date : String, description : String, amount : Int, onLongPress : () -> Unit) {
+fun TranslateItemName (date : String, description : String, amount : Int, onClick : () -> Unit = {}, onLongPress : () -> Unit = {}) {
     val showDate = remember(date) { formatDateForUI(date) }
     Column(
         modifier = Modifier
@@ -61,6 +61,7 @@ fun TranslateItemName (date : String, description : String, amount : Int, onLong
             .pointerInput(Unit) {
                 detectTapGestures(
                     onTap = {
+                        onClick()
                         Log.d("Item클릭", "날짜 : $date 내용 : $description 금액 : $amount")
                     },
                     onLongPress = {
@@ -103,7 +104,7 @@ fun TranslateItemName (date : String, description : String, amount : Int, onLong
 //                thickness = 1.dp
 //            )
             Text (
-                text = amount.toString(),
+                text = amount.toString() + "원",
                 modifier = Modifier.weight(1f),
                 fontSize = 16.sp,
                 color = MaterialTheme.colorScheme.onBackground
@@ -118,6 +119,7 @@ fun TranslateItemName (date : String, description : String, amount : Int, onLong
     }
 }
 
+// 리스트에서 ex : 11-29 처럼 보이기 위함
 fun formatDateForUI(date : String) : String {
     return try {
         val input = DateTimeFormatter.ISO_LOCAL_DATE

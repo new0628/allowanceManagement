@@ -1,99 +1,111 @@
 package com.example.allowancemanagement.viewModel
 
 import androidx.lifecycle.ViewModel
-import com.example.allowancemanagement.view.home.ActivityUI
+import com.example.allowancemanagement.model.HomeRepository
+import com.example.allowancemanagement.model.ActivityUI
+import com.example.allowancemanagement.view.home.TabName
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.time.LocalDate
 
-class HomeViewModel : ViewModel() {
+class HomeViewModel() : ViewModel() {
+
+    private val repo = HomeRepository()
     // ───────── 잔액 ─────────
-    private val _balance = MutableStateFlow(10000)
+    private val _balance = MutableStateFlow(0)
     val balance = _balance
 
+    // 검색어
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery : StateFlow<String> = _searchQuery.asStateFlow()
+
+    // 선택된 년/월
+    private val today = LocalDate.now()
+    private val _selectedYear = MutableStateFlow(today.year)
+    private val _selectedMonth = MutableStateFlow(today.monthValue)
+    val selectedYear : StateFlow<Int> = _selectedYear.asStateFlow()
+    val selectedMonth : StateFlow<Int> = _selectedMonth.asStateFlow()
+
+    // 기존에 있던 리스트 repo에서 불러오기
+    val expenseList : StateFlow<List<ActivityUI>> = repo.expenseList
+    val incomeList : StateFlow<List<ActivityUI>> = repo.incomeList
+
+    // ─────────────── 아래부터 함수 ───────────────
+
+    fun loadInitialData() {
+        reloadFromDb()
+        updateBalance()
+        // loadDailySum(TabName.EXPENSE)
+    }
+
+    private fun reloadFromDb() {
+        val year = _selectedYear.value
+        val month = _selectedMonth.value
+        val query = _searchQuery.value
+        repo.reloadFromDb(year, month, query)
+    }
+
     // 잔액 업데이트
-    fun updateBalance(newValue : Int) {
-        _balance.value = newValue
+    fun updateBalance() {
+        _balance.value = repo.loadBalance()
     }
 
-    // ───────── 지출 / 수입 리스트 ─────────
-    private val _expenseList = MutableStateFlow<List<ActivityUI>>(emptyList())
-    val expenseList : StateFlow<List<ActivityUI>> = _expenseList.asStateFlow()
-
-    private val _incomeList = MutableStateFlow<List<ActivityUI>>(emptyList())
-    val incomeList : StateFlow<List<ActivityUI>> = _incomeList.asStateFlow()
-
-    init {
-        _expenseList.value = List(15) { index ->
-            val day = index + 1
-            ActivityUI(
-                id = index,
-                date = "2025-11-%02d".format(day),
-                description = "스타벅스 $index",
-                amount = 10_000 * (index + 1)
-            )
-        }
-
-        _incomeList.value = List(10) { index ->
-            val day = index + 1
-            ActivityUI(
-                id = index,
-                date = "2025-11-%02d".format(day),
-                description = "용돈 $index",
-                amount = 5_000 * (index + 1)
-            )
-        }
+    // 검색어 업데이트 + 선택된 년/월
+    fun updateSearchQuery(newQuery : String) {
+        _searchQuery.value = newQuery
+        reloadFromDb()
     }
 
-    // 정렬 기준 1) 날짜, 2) 들어온순서
-    private val activityComparator = compareBy<ActivityUI> (
-        { it.date },
-        { it.id }
-    )
+    //
+    fun updateSelectDate(year : Int, month : Int, tab : TabName) {
+        _selectedYear.value = year
+        _selectedMonth.value = month
+        reloadFromDb()
+        // loadDailySum(tab)
+    }
 
-    // ㅡㅡㅡㅡ 추가 ㅡㅡㅡㅡ
     fun addExpense(date : String, description : String, amount : Int) {
-        val current = _expenseList.value
-        val newID = (current.maxOfOrNull { it.id } ?: 0) + 1
-
-        val newItem = ActivityUI (
-            id = newID,
-            date = date,
-            description = description,
-            amount = amount
-        )
-
-        val updateList = (current + newItem).sortedWith(activityComparator)
-        _expenseList.value = updateList.sortedWith(activityComparator)
-        _balance.value -= amount
+        repo.addExpense(date, description, amount)
+        reloadFromDb()
+        updateBalance()
+        // loadDailySum(TabName.EXPENSE)
     }
 
     fun addIncome(date : String, description : String, amount : Int) {
-        val current = _incomeList.value
-        val newId = (current.maxOfOrNull { it.id } ?: 0) + 1
-
-        val newItem = ActivityUI(
-            id = newId,
-            date = date,
-            description = description,
-            amount = amount
-        )
-
-        val updateList = (current + newItem).sortedWith(activityComparator)
-        _incomeList.value = updateList
-
-        _balance.value += amount
+        repo.addIncome(date, description, amount)
+        reloadFromDb()
+        updateBalance()
+        // loadDailySum(TabName.INCOME)
     }
 
-    // ㅡㅡㅡㅡ 삭제 ㅡㅡㅡㅡ
+    fun updateExpense (original : ActivityUI, newDate : String, newDescription : String, newAmount : Int
+    ) {
+        repo.updateExpense(original, newDate, newDescription, newAmount)
+        reloadFromDb()
+        updateBalance()
+        // loadDailySum(TabName.EXPENSE)
+    }
+
+    fun updateIncome(original: ActivityUI, newDate: String, newDescription: String, newAmount: Int) {
+        repo.updateIncome(original, newDate, newDescription, newAmount)
+        reloadFromDb()
+        updateBalance()
+        // loadDailySum(TabName.INCOME)
+    }
+
     fun removeExpense(item : ActivityUI) {
-        _expenseList.value = _expenseList.value.filterNot { it.id == item.id }.sortedWith(activityComparator)
-        // 나중에 잔액 조정해야함
+        repo.removeExpense(item)
+        reloadFromDb()
+        updateBalance()
+        // loadDailySum(TabName.EXPENSE)
     }
 
     fun removeIncome(item : ActivityUI) {
-        _incomeList.value = _incomeList.value.filterNot { it.id == item.id }.sortedWith(activityComparator)
-        // 나중에 잔액 조정해야함
+        repo.removeIncome(item)
+        reloadFromDb()
+        updateBalance()
+        // loadDailySum(TabName.INCOME)
     }
 
 }

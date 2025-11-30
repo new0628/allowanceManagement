@@ -25,20 +25,16 @@ import java.time.LocalDate
 
 // 년/월 선택 날짜 UI
 @Composable
-fun MonthSelector() {
+fun MonthSelector(year : Int, month : Int, onMonthChange : (Int, Int) -> Unit) {
     // 오늘 기준
     val today = LocalDate.now()
     val currentYear = today.year
     val currentMonth = today.monthValue
 
-    // 선택된 년/월 (초기값은 현재 년, 월)
-    var selectYear by remember { mutableIntStateOf(currentYear) }
-    var selectMonth by remember { mutableIntStateOf(currentMonth) }
-
     // 년 / 월 -> 문자열로
-    val formatDate = "%04d.%02d".format(selectYear, selectMonth)
+    val formatDate = "%04d.%02d".format(year, month)
 
-    Row (
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp, vertical = 10.dp),
@@ -46,22 +42,26 @@ fun MonthSelector() {
         verticalAlignment = Alignment.CenterVertically
     ) {
         // 왼쪽 <
-        IconButton (
+        IconButton(
             onClick = {
-                if (selectMonth == 1) {
-                    selectYear --
-                    selectMonth = 12
+                val newYear : Int
+                val newMonth : Int
+                if (month == 1) {
+                    newYear = year - 1
+                    newMonth = 12
                 }
                 else {
-                    selectMonth --
+                    newYear = year
+                    newMonth = month - 1
                 }
+                onMonthChange(newYear, newMonth)
             },
-            enabled = !(selectYear == 2024 && selectMonth == 1)
+            enabled = !(year == 2024 && month == 1)
         ) {
-            Icon (
+            Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                 contentDescription = "prev month",
-                tint = if (selectYear == 2024 && selectMonth == 1) {
+                tint = if (year == 2024 && month == 1) {
                     Color.Gray
                 } else {
                     Color.Red
@@ -76,24 +76,28 @@ fun MonthSelector() {
         )
 
         // 오른쪽 >
-        IconButton (
+        IconButton(
             onClick = {
-                if (!(selectYear == currentYear && selectMonth == currentMonth)) {
-                    if (selectMonth == 12) {
-                        selectYear ++
-                        selectMonth = 1
+                if (!(year == currentYear && month == currentMonth)) {
+                    val newYear : Int
+                    val newMonth : Int
+                    if (month == 12) {
+                        newYear = year + 1
+                        newMonth = 1
                     }
                     else {
-                        selectMonth ++
+                        newYear = year
+                        newMonth = month + 1
                     }
+                    onMonthChange(newYear, newMonth)
                 }
             },
-            enabled = !(selectYear == currentYear && selectMonth == currentMonth)
+            enabled = !(year == currentYear && month == currentMonth)
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = "next month",
-                tint = if (selectYear == currentYear && selectMonth == currentMonth) {
+                tint = if (year == currentYear && month == currentMonth) {
                     Color.Gray
                 } else {
                     Color.Red
